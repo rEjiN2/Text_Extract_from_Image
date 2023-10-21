@@ -1,95 +1,117 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client"
+import React, {
+  useEffect,
+  useState
+} from 'react';
+import Dropzone from 'react-dropzone-uploader';
+const { createWorker } = require('tesseract.js');
 
 export default function Home() {
+
+
+  const [text, setText] = useState(null);
+  const [document , setDocument] = useState("")
+  const [id , setId] = useState("")
+  const [name , setName] = useState("")
+  const [imageUrl] = useState(null);
+
+
+  useEffect(() => {
+      if (imageUrl != null) {
+          ExtractTextFromImage();
+      }
+  });
+
+  const worker = createWorker({
+      logger: (m) => console.log(m),
+  });
+
+  const ExtractTextFromImage = async (imageUrl) => {
+      await worker.load();
+      await worker.loadLanguage("eng");
+      await worker.initialize("eng");
+      const {
+          data: {
+              text
+          },
+
+      } = await worker.recognize(imageUrl);
+      setText(text);
+      await worker.terminate();
+      const lines = text.split('\n');
+    if (lines.length >= 3) {
+      setDocument(lines[0]);
+      setId(lines[1]);
+      setName(lines[2]);
+    }
+  };
+
+
+  const getUploadParams = () => {
+      return {
+          url: 'https://httpbin.org/post'
+      }
+  }
+
+  const handleChangeStatus = ({
+      meta
+  }, status) => {
+      if (status === 'headers_received') {
+          alert("Uploaded");
+          setText("Reconizing...");
+          ExtractTextFromImage(meta.previewUrl);
+      } else if (status === 'aborted') {
+          alert("Something went wrong")
+      }
+  }
+
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+   <div>
+    
+        <nav className = "navbar navbar-light bg-light justify-content-center mt-3" >
+        <a className = "navbar-brand" href = "/" > React OCR </a><br/ >
+        <p> Optical Character Recognition with React and Tesseract.js </p>  
+        </nav >
+
+
+        <Dropzone getUploadParams = {
+            getUploadParams
+        }
+        onChangeStatus = {
+            handleChangeStatus
+        }
+        maxFiles = {
+            1
+        }
+        multiple = {
+            false
+        }
+        canCancel = {
+            false
+        }
+        accept = "image/jpeg, image/png, image/jpg"
+        inputContent = {
+            (files,extra) => (extra.reject ? 'Only PNG and JPG Image files are allowed' : 'Drop  image here')
+        }
+        styles = {
+            {
+                dropzoneActive: {
+                    borderColor: 'green'
+                },
+                dropzoneReject: { borderColor: 'red', backgroundColor: '#DAA' },
+                    inputLabel: (files, extra) => (extra.reject ? { color: 'red' } : {}),
+            }
+        }
+        /> 
+         {/* <div className = "container text-center pt-5" > {
+            text
+        } </div>  */}
+        <div className="container">
+        <div><strong>Document:</strong> {document}</div>
+        <div><strong>ID:</strong> {id}</div>
+        <div><strong>Name:</strong> {name}</div>
       </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+   </div>
   )
 }
